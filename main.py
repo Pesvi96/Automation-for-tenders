@@ -3,6 +3,6 @@ from functions import *
 
 
 
-init("http://dev2.tenders.ge")
+driver = init("http://dev2.tenders.ge")
 
-
+sign_in()
