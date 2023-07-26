@@ -1,4 +1,4 @@
-from elements import links
+from elements import links, accounts
 from selenium import webdriver
 # from selenium.webdriver.support.select import Select
 # from selenium.webdriver.support.ui import WebDriverWait
@@ -24,24 +24,28 @@ def init(website: str) -> object:
 
 
 # TODO: Should it return None?
-def max_function_tries(function) -> None:
+def max_tries(function, *args) -> None:
     """try to perform a function for MAX_TRIES times"""
     for x in range(MAX_TRIES):
-        if function(): break
+        if function(*args): break
         if x == MAX_TRIES:
             print(f"Tried three times and didn't work")
+            raise
 
 
 def find(element_type: str, value: str) -> WebElement | None:
     """Finds the element and returns it, returns None if not found"""
     try:
         element = driver.find_element(by=element_type, value=value)
-        print(type(element))
     except NoSuchElementException:
-        print("Element does not exist")
+        print(f"\t***Element does not exist: {value}***")
         return None
     except ElementNotVisibleException:
-        print("Element indicated not visible")
+        print(f"\t***Element indicated not visible: {value}***")
+        return None
+    except:
+        print(f"\t***Unexpected error with finding element {value}***")
+        traceback.print_exc()
         return None
     else:
         return element
@@ -53,7 +57,7 @@ def btn_click(element: str) -> None:
         btn = find(*links[element])
         btn.click()
     except:
-        print("Couldn't click on the element")
+        print(f"\t***Unexpected error with clicking element {element}***")
         traceback.print_exc()
         raise
 
@@ -75,7 +79,7 @@ def box_type(element: str, value: str) -> None:
             if count == MAX_TRIES:
                 raise
     except:
-        print("Couldn't type in the element")
+        print(f"\t***Unexpected error with typing in element {element}***")
         traceback.print_exc()
         raise
 
@@ -95,10 +99,25 @@ def check_url(actual):
     return current_url == actual
 
 
-# TODO: Change to dev2
-def sign_in():
-    """Sign in to the designated user"""
-    btn_click("announce_btn")
+def sign_in(user: str) -> bool:
+    """Sign in to the designated user from accounts dictionary. Returns True if
+    signed in, returns False in case of error """
+    try:
+        btn_click("sign_in_btn")
+        box_type("sign_in_mail", accounts[user]["user"])
+        box_type("sign_in_pass", accounts[user]["pass"])
+        btn_click("sign_in_submit_btn")
+        driver.get("http://dev2.tenders.ge/profile/company-info")
+        company_name = find(*links["profile_company_name"]).text
+    except:
+        return False
+    else:
+        if company_name == accounts[user]["company_name"]:
+            print(f"Signed in successfully to {accounts[user]['user']}")
+            return True
+        else:
+            print(f"The user signed in is not right. User displayed: {company_name}")
+            # TODO: Logout
 
 # TODO: URL check test
 # TODO: announce tender function

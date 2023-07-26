@@ -5,4 +5,5 @@ from functions import *
 
 driver = init("http://dev2.tenders.ge")
 
-sign_in()
+max_tries(sign_in, "dev2announcer")
+
