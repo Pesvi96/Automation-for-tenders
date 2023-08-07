@@ -101,14 +101,14 @@ def check_url(actual):
 
 def sign_in(user: str) -> bool:
     """Sign in to the designated user from accounts dictionary. Returns True if
-    signed in, returns False in case of error """
+    signed in, returns False in case of error"""
     try:
         btn_click("sign_in_btn")
         box_type("sign_in_mail", accounts[user]["user"])
         box_type("sign_in_pass", accounts[user]["pass"])
         btn_click("sign_in_submit_btn")
         driver.get("http://dev2.tenders.ge/profile/company-info")
-        company_name = find(*links["profile_company_name"]).text
+        company_name = find(*links["profile_company_name"]).text    # Does it check the sign in? There's no raise
     except:
         return False
     else:
