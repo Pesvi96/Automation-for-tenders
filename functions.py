@@ -33,53 +33,52 @@ def max_tries(function, *args) -> None:
             raise
 
 
-def find(element_type: str, value: str) -> WebElement | None:
+def find(element_type, value):
     """Finds the element and returns it, returns None if not found"""
     try:
         element = driver.find_element(by=element_type, value=value)
     except NoSuchElementException:
-        print(f"\t***Element does not exist: {value}***")
-        return None
-    except ElementNotVisibleException:
-        print(f"\t***Element indicated not visible: {value}***")
+        message = f"Element {value} does not exist. Current URL: {driver.current_url}"
+        add_error(message)
         return None
     except:
-        print(f"\t***Unexpected error with finding element {value}***")
-        traceback.print_exc()
+        message = f"Unknown error on finding element {value}. Current URL: {driver.current_url}"
+        add_error(message)
         return None
     else:
         return element
 
 
-def btn_click(element: str) -> None:
-    """Clicks the indicated element. Error check provided"""
+def btn_click(element):
+    """Clicks the indicated element. Error check provided. Doesn't return anythin"""
     try:
         btn = find(*links[element])
         btn.click()
+    except ElementClickInterceptedException:
+        message = f"Element {element} not clickable. Current URL: {driver.current_url}"
+        add_error(message)
+        raise
     except:
-        print(f"\t***Unexpected error with clicking element {element}***")
+        message = f"Unknown error on clicking element {element}. Current URL: {driver.current_url}"
+        add_error(message)
         traceback.print_exc()
         raise
 
 
-def box_type(element: str, value: str) -> None:
+def box_type(element, value):
     """Types the value in the indicated element. Checks if the value in
-    the element is right after typing. Raises error if 3 tries of
-    typing was not enough. Error check provided"""
+    the element is right after typing. Error check provided"""
     try:
         btn = find(*links[element])
         btn.send_keys(value)
-        count = 0
         while btn.get_attribute('value') != value:
-            print(btn.text)
+            print_to_log(
+                f"\t* Little hiccup in box_type func. Value received: {value}, value of input field:{btn.get_attribute('value')}\n\tTrying again...\n")
             btn.clear()
             btn.send_keys(value)
             time.sleep(1)
-            count += 1
-            if count == MAX_TRIES:
-                raise
     except:
-        print(f"\t***Unexpected error with typing in element {element}***")
+        add_error("Couldn't type in the element")
         traceback.print_exc()
         raise
 
@@ -91,14 +90,14 @@ def get_time():
     print(month)
     return month
 
-
+#TODO: Check the check_url function
 def check_url(actual):
     """Checks if you are at the given URL"""
 
     current_url = driver.current_url
     return current_url == actual
 
-
+#TODO: Check the sign_ing function
 def sign_in(user: str) -> bool:
     """Sign in to the designated user from accounts dictionary. Returns True if
     signed in, returns False in case of error"""
@@ -121,3 +120,16 @@ def sign_in(user: str) -> bool:
 
 # TODO: URL check test
 # TODO: announce tender function
+
+
+def print_to_log(message):
+    try:
+        with open("Logs/logs.csv", mode="a", encoding='utf-8') as file:
+            print(message)
+            file.write(f"{message}\n")
+    except:
+        with open("Logs/logs.csv", mode="w", encoding='utf-8') as file:
+            print(message)
+            file.write(f"{message}\n")
+
+
