@@ -1,5 +1,5 @@
 # Automatisation-for-Tenders
-Selenium codes for test automatisation
+Selenium codes for test automation
 
 
 
