@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from elements import links, accounts
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -13,6 +13,7 @@ from selenium.common.exceptions import NoSuchElementException, ElementNotVisible
 import traceback
 import time
 import re
+import pyautogui
 
 driver: WebDriver
 env_accounts: dict
@@ -20,6 +21,16 @@ wait: WebDriverWait
 env: str
 action: ActionChains
 MAX_TRIES = 3
+
+default_parameters = {
+    'is_spot': False,
+    'is_closed': True,
+    'has_price_list': False,
+    'has_custom_fields': False,
+    'has_invitations': False,
+    'is_transportation': False,
+    'tender_id': None
+}
 
 
 # count = 0
@@ -53,19 +64,24 @@ def init(website: str, test_env=True, count=0) -> WebDriver:
     return driver
 
 
-def find(element_name: str) -> WebElement | None:
+def find(element_name: str, inside_element: WebElement = None) -> WebElement | None:
     """Receives string for element_name. Finds the element parameters in elements
-    dictionary and returns WebElement object, returns None if not found"""
+    dictionary and returns WebElement object, returns None if not found.
+    Can be used to search inside element (e.g. div)"""
     try:
         element_type, element_value = links[element_name]
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((element_type, element_value)))
-        element = driver.find_element(by=element_type, value=element_value)
+        # WebDriverWait(driver, 10).until(EC.presence_of_element_located((element_type, element_value)))
+        if inside_element != None:
+            element = inside_element.find_element(by=element_type, value=element_value)
+        else:
+            element = driver.find_element(by=element_type, value=element_value)
     except NoSuchElementException:
         print_to_log(f"Element {element_name} does not exist. Current URL: {driver.current_url}.")
         return None
     except Exception as err:
         print_to_log(
-            f"Error with find func. Looking for: {element_name}. Current URL: {driver.current_url}. Error: {err}.")
+            f"Error with find func. Looking for: {element_name}. Current URL: {driver.current_url}. Error: {err}."
+            f"\nTraceback: {traceback.format_exc()}")
         return None
     else:
         return element
@@ -86,26 +102,38 @@ def btn_click(element_name: str) -> None:
         raise
 
 
-def box_type(element_name: str, value: str) -> None:
+def get_element_value(element_name: str) -> str:
+    element = find(element_name)
+    if element.get_attribute('value') is not None:
+        element_value = element.get_attribute('value')
+        print_to_log("get_element_value func. Tried value for check")
+    elif element.get_attribute('textContent') is not None:
+        element_value = element.get_attribute('textContent')
+        print_to_log("get_element_value func. Tried textContent for check")
+    else:
+        element_value = element.text
+        print_to_log("get_element_value func. Tried .text for check")
+    return element_value
+
+
+def box_type(element_name: str, value: str, addition: str = None) -> None:
     """Types the value in the indicated element. Checks if the value in
-    the element is right after typing. Error check provided"""
+    the element is right after typing. If a symbol is added to input after typing,
+    you can indicate it in addition var. Error check provided"""
     try:
         element = find(element_name)
+        element_value = get_element_value(element_name)
+        if addition is not None:
+            print_to_log("box_type func: It's an addition, adding value to addition")
+            value = element_value + addition
         element.send_keys(value)
-        if element.get_attribute('value') != None:
-            element_value = element.get_attribute('value')
-            print_to_log("box_type func. Tried value for check")
-        elif element.get_attribute('textContent') != None:
-            element_value = element.get_attribute('textContent')
-            print_to_log("box_type func. Tried textContent for check")
-        else:
-            element_value = element.text
-            print_to_log("box_type func. Tried .text for check")
+        element_value = get_element_value(element_name)
 
         if element_value != value:
             for x in range(3):
                 print_to_log(
-                    f"\t* Little hiccup in box_type func. Value received: {value}, value of input field:{element_value}\n\tTrying again...\n")
+                    f"\t* Little hiccup in box_type func. Value received: {value} type {(type(value))},"
+                    f" value of input field:{element_value}, type {type(element_value)}\n\tTrying again...\n")
                 element.clear()
                 element.send_keys(value)
                 time.sleep(1)
@@ -125,6 +153,16 @@ def mce_type(element_name: str, value: str) -> None:
         mce = find(element_name)
         driver.switch_to.frame(mce)
         box_type("announce_tender_description_input_body", value)
+        # element_value = get_element_value(element_name)
+        # if element_value != value:
+        #     for x in range(3):
+        #         print_to_log("mce_type func: element value was not equal to designated value. Trying box_type again")
+        #         box_type("announce_tender_description_input_body", value)
+        #         element_value = get_element_value(element_name)
+        #         if element_value == value:
+        #             break
+        #         if x == 2:
+        #             raise Exception("Tried mce_type func 3 times, didn't work")
         driver.switch_to.default_content()
     except Exception as err:
         print_to_log(f"Error with mce_Type func. Error: {err}")
@@ -155,7 +193,7 @@ def print_to_log(message) -> None:
         with open("Logs/logs.txt", mode="a", encoding='utf-8') as file:
             print(message)
             file.write(f"{message}\n")
-    except:
+    except Exception:
         with open("Logs/logs.txt", mode="w", encoding='utf-8') as file:
             print(message)
             file.write(f"{message}\n")
@@ -206,6 +244,7 @@ def sign_in(user: str) -> bool:
     """Sign in to the designated user from accounts dictionary. Returns True if
     signed in, returns False in case of error"""
     try:
+        driver.get(env + "tenders.ge")
         an_reg_btn = find("announce/register_btn")
         if an_reg_btn.text == "გამოცხადება":
             print_to_log("Already signed in. Signing out")
@@ -214,18 +253,18 @@ def sign_in(user: str) -> bool:
         box_type("sign_in_mail", env_accounts[user]["mail"])
         box_type("sign_in_pass", env_accounts[user]["pass"])
         btn_click("sign_in_submit_btn")
-        driver.get(f"{env}tenders.ge/profile/company-info")
-        company_name = find("profile_company_name").text  # Does it check the sign in? There's no raise
+        if user != "admin":
+            driver.get(f"{env}tenders.ge/profile/company-info")
+            company_name = find("profile_company_name").text  # Does it check the sign in? There's no raise
+            if company_name != env_accounts[user]["company_name"]:
+                print_to_log(f"The user signed in is not right. User displayed: {company_name}. Trying again")
+                sign_in(user)
     except Exception as err:
         print_to_log(f"Error with sign_in func. Error: {err}")
         return False
     else:
-        if company_name == env_accounts[user]["company_name"]:
-            print_to_log(f"Signed in successfully to {env_accounts[user]["company_name"]}")
-            return True
-        else:
-            print_to_log(f"The user signed in is not right. User displayed: {company_name}. Trying again")
-            sign_in(user)
+        print_to_log(f"Signed in successfully to {env_accounts[user]["company_name"]}")
+        return True
 
 
 def sign_out() -> None:
@@ -239,10 +278,44 @@ def sign_out() -> None:
         print_to_log("Signed out successfully")
 
 
-class Tender():
+def receive_params() -> dict:
+    tender_parameters = default_parameters
+    answer = input("Okay now let's figure out the parameters. Let's go one by one. Is it SPOT? type y/n\n")
+    if answer == "y":
+        print("So it is SPOT you seek")
+        tender_parameters["is_spot"] = True
+        tender_parameters["has_price_list"] = True
+        tender_parameters["has_invitations"] = True
+        answer = input("Would this SPOT one have custom fields?")
+        if answer == 'y':
+            tender_parameters["has_custom_fields"] = True
+    else:
+        print("So it is a mere E-Tender you seek")
+        answer = input("Is it a transportation tender, padawan?\n")
+        if answer == 'y':
+            print("Transportation it is")
+            tender_parameters["is_transportation"] = True
+        else:
+            print("A standard E-Tender you shall find\n")
+            answer = input("Shall it provide is with a price list, my young one?\n")
+            if answer == 'y':
+                tender_parameters["has_price_list"] = True
+                answer = input("And a custom field for an individual like you?\n")
+                if answer == 'y':
+                    tender_parameters["has_custom_fields"] = True
+        answer = input("Is it a closed one, grasshopper?\n")
+        if answer == 'n':
+            tender_parameters["is_closed"] = False
+    answer = input("Almost done. Do you seek a particular ID? if yes, type it in, if not, just type n\n")
+    if answer != 'n':
+        tender_parameters["tender_id"] = answer
+    return tender_parameters
+
+
+class Tender:
 
     def __init__(self, is_spot=False, is_closed=True, has_price_list=False, has_custom_fields=False,
-                 has_invitations=False, is_transportation=False):
+                 has_invitations=False, is_transportation=False, tender_id: str = None, spot_link: str = None):
         """Creates an open E-Tender without Price List and has_invitations as a default"""
         self.is_spot = is_spot
         self.is_closed = is_closed
@@ -250,16 +323,17 @@ class Tender():
         self.has_custom_fields = has_custom_fields
         self.has_invitations = has_invitations
         self.is_transportation = is_transportation
+        self.tender_id = tender_id
+        self.spot_link = spot_link
 
-    def add_tender(self) -> str:
+    def add_procurement(self) -> None:
         """
-        Receives params to check which type tender you want. Returns created tender ID.
+        Receives params to check which type tender you want.
         is_spot: True / False (SPOT if true, E-Tender if False, announcement not needed)
         is_closed: True / False
         has_price_list: True / False
         has_custom_fields: True / False
         has_invitations: True / False
-        inv_company_list: list of dict? ???????????
         is_transportation: True / False
         """
         sign_in("announcer")
@@ -269,24 +343,25 @@ class Tender():
         else:
             self.add_etender_general_info()
         box_type("announce_tender_title_input", "Automation Tender")
-        mce_type("announce_tender_description_input", "test")
+        time.sleep(2)
         box_type("announce_tender_email_input", env_accounts["announcer"]["mail"])
+        mce_type("announce_tender_description_input", "test")
         btn_click("add_tender_btn_class")
-        if self.is_spot == False:
-            self.indicate_cpv_category()
-        btn_click("add_tender_btn_class")
-        if self.has_invitations == True:
+        if self.is_spot is False:  # If it's a tender, indicate CPV category
+            btn_click("announce_tender_category_checkbox")
+            btn_click("add_tender_btn_class")
+        btn_click("add_tender_btn_class")  # Click next on Documentation page
+        if self.has_invitations:
             self.invite_companies()
         print_to_log("Looking for next button in invitations page")
         btn_click("add_tender_btn_class")
-        tender_full_name = find("announcer_tender_preview_title").get_attribute('textContent')
-        tender_id = str(re.findall('[S|T]([0-9]+)', tender_full_name))
-        print_to_log(f"Tender ID: {tender_id}")
-        # btn_click("announcer_tender_preview_submit_btn")
-        if self.is_spot == False:
-            self.approve_tender_admin(tender_id)
-        return tender_id
-        # Categories here for e_tenders
+        tender_full_name = find("announce_tender_preview_title").get_attribute('textContent')
+        self.tender_id = (re.findall('[S|T]([0-9]+)', tender_full_name))[0]  # Returns tender id as a string
+        print_to_log(f"Tender ID: {self.tender_id}")
+        driver.get(env + "tenders.ge/action/send-for-approval/" + self.tender_id)
+        # btn_click("announce_tender_preview_submit_btn")
+        if self.is_spot is False:
+            self.approve_tender_admin()
 
     def add_etender_general_info(self) -> None:
         btn_click("announce_etender_btn")
@@ -300,9 +375,9 @@ class Tender():
             print_to_log("Created Transportation tender")
         if self.is_closed:
             btn_click("announce_tender_closed")
-        if self.has_price_list and self.is_transportation == False:
+        if self.has_price_list and self.is_transportation is False:
             self.create_price_list_announcer()
-            if self.has_custom_fields == True:
+            if self.has_custom_fields is True:
                 self.create_custom_fields_announcer()
         calendar_input("announce_tender_calendar_deadline", get_submission_deadline())
         calendar_input("announce_tender_calendar_start", datetime.now().strftime("%Y-%m-%d %H:%M"))
@@ -313,17 +388,6 @@ class Tender():
         if self.has_custom_fields:
             self.create_custom_fields_announcer()
         calendar_input("announce_tender_calendar_deadline", get_submission_deadline())
-
-    def add_tender_admin(self):
-        pass
-
-    def approve_tender_admin(self, tender_id: str) -> None:
-        sign_in("admin")
-
-        pass
-
-    def indicate_cpv_category(self):
-        pass
 
     def create_price_list_announcer(self) -> None:
         """Creates price list in announcer - General info page"""
@@ -366,8 +430,135 @@ class Tender():
             box_type("announce_tender_invitations_id_input", participant["ID"])
         btn_click("announce_tender_invitations_add_btn")
 
+    def add_tender_admin(self):
+        pass
 
-    def erase_drafts(self):
+    def approve_tender_admin(self) -> None:
+        sign_in("admin")
+        print(self.tender_id)
+        driver.get(env + "tenders.ge/admin/tender-manager/preview/" + self.tender_id)
+        btn_click("admin_panel_publish_tender_btn")
+
+    def upload_offer(self):
+        """Goes to the offer page and uploads document + offer. Signs into participant acc if needed"""
+        if self.is_spot:
+            driver.get(self.spot_link)
+        else:
+            driver.get(env + "tenders.ge")
+            sign_in("participant1")
+            driver.get(env + "tenders.ge/tenders/proposal/" + self.tender_id)
+
+        self.upload_offer_doc()
+        if self.is_transportation:
+            self.upload_offer_transportation()
+        else:
+            if self.has_price_list:
+                self.upload_offer_price_list()
+                if self.has_custom_fields:
+                    self.upload_offer_custom_fields()
+                btn_click("offer_transport&price_list_accept_submit")
+            else:
+                self.upload_offer_standard_price()
+
+    def upload_offer_doc(self):
+        try:
+            btn_click("offer_document_upload_btn")
+            file_input = find("offer_document_upload_btn_2")
+            file_path = "C:/Users/user/PycharmProjects/Automatisation-for-Tenders/Logs/logs.txt"
+            file_input.send_keys(file_path)
+            btn_click("offer_document_upload_submit")
+        except Exception as err:
+            print_to_log(f"Error with upload_offer_doc func. Error: {err} ")
+
+    def upload_offer_price_list(self):
+        """Uploads Price list"""
+        try:
+            btn_click("offer_price_list_btn")
+            box_type("offer_price_list_analog", "test")
+            offer_price_list_price = find("offer_price_list_price")
+            offer_price_list_price.send_keys("5")
+            btn_click("offer_price_list_submit")
+        except Exception as err:
+            print_to_log(f"Error with upload_offer_price_list func. Error: {err}")
+
+    def upload_offer_custom_fields(self):
+        """Fills custom fields according to main template. Error check provided"""
+        try:
+            btn_click("offer_custom_fields_yes/no")
+            select_unit("offer_custom_fields_multiple_choice", 2)
+            box_type("offer_custom_fields_short_text", "short text")
+            box_type("offer_custom_fields_long_text", "long text")
+            box_type("offer_custom_fields_numbers", "123")
+            box_type("offer_custom_fields_percent", "15")
+            calendar_input("offer_custom_fields_calendar", datetime.now().strftime("%Y-%m-%d %H:%M"))
+        except Exception as err:
+            print_to_log(f"Error with upload_offer_custom_fields func. Error: {err}")
+
+    def upload_offer_standard_price(self):
+        try:
+            box_type("offer_standard_price", "10")
+            btn_click("offer_standard_price_submit")
+            btn_click("offer_standard_price_submit_accept")
+        except Exception as err:
+            print_to_log(f"Error with upload_offer_standard_price func. Error: {err}")
+
+    def upload_offer_transportation(self):
+        try:
+            btn_click("offer_transportation_btn")
+            input_price = find("offer_transportation_input_price")
+            input_price.send_keys("30")
+            box_type("offer_transportation_input_transit", '15')
+            select_unit("offer_transportation_select_terms", 1)
+            input_days = find("offer_transportation_input_days")
+            input_days.send_keys("15")
+            btn_click("offer_transportation_submit")
+            btn_click("offer_transport&price_list_accept_submit")
+        except Exception as err:
+            print_to_log(f"Error with upload_offer_transportation func. Error: {err}")
+
+    def clarifications_question(self):
+        """
+        - Go to questions page
+        - Type question in the question input box
+        - Press send button
+        - Return to various page
+        """
+        pass
+
+    def clarifications_answer(self):
+        """
+        - Go to questions page
+        - Type question in the question input box
+        - Press send button
+        - Return to various page
+        """
+
+    def notifications_question(self):
+        pass
+
+    def notifications_answer(self):
+        pass
+
+    def declare_result(self, status):
+        """
+        statuses:
+        Current : status-info bg-primary
+        Evaluation : status-info bg-blue
+        Failed : status-info bg-danger
+        Winner : status-info bg-purple
+        Awarded : status-info bg-green
+        Rejected : status-info bg-danger
+        Canceled : status-info bg-danger
+        """
+        sign_in("announcer")
+        driver.get(env + "tenders.ge/tenders/result/" + self.tender_id)
+        result_status_div = find("result_status_div")
+        result_status = find("result_status_div_class", result_status_div)
+        status_attribute = result_status.get_attribute('class')
+        print(status_attribute)
+
+    @staticmethod
+    def erase_drafts():
         sign_in("announcer")
         btn_click("dashboard")
         for _ in range(15):
