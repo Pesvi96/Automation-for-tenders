@@ -9,7 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.alert import Alert
 from selenium.common.exceptions import NoSuchElementException, ElementNotVisibleException, \
-    ElementClickInterceptedException
+    ElementClickInterceptedException, StaleElementReferenceException
 import traceback
 import time
 import re
@@ -50,6 +50,7 @@ def init(website: str, test_env=True, count=0) -> WebDriver:
     options.add_experimental_option("detach", True)  # Keep the browser open until .quit command comes
     driver = webdriver.Chrome(options=options)
     driver.implicitly_wait(15)
+    driver.minimize_window()
     action = ActionChains(driver)
     wait = WebDriverWait(driver, 10)
     try:
@@ -64,17 +65,25 @@ def init(website: str, test_env=True, count=0) -> WebDriver:
     return driver
 
 
-def find(element_name: str, inside_element: WebElement = None) -> WebElement | None:
-    """Receives string for element_name. Finds the element parameters in elements
-    dictionary and returns WebElement object, returns None if not found.
+def find(element_name: str, is_plural=False, in_element: WebElement = None) -> WebElement | list[WebElement] | None:
+    """Receives string for element_name. Can be used to look for list of elements or just an element.
+    Finds the element parameters in elements dictionary and returns WebElement object/list, returns None if not found.
     Can be used to search inside element (e.g. div)"""
+    element_type, element_value = links[element_name]
     try:
-        element_type, element_value = links[element_name]
-        # WebDriverWait(driver, 10).until(EC.presence_of_element_located((element_type, element_value)))
-        if inside_element != None:
-            element = inside_element.find_element(by=element_type, value=element_value)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((element_type, element_value)))
+        if in_element is None:
+            if is_plural:
+                element = driver.find_elements(by=element_type, value=element_value)
+            else:
+                element = driver.find_element(by=element_type, value=element_value)
         else:
-            element = driver.find_element(by=element_type, value=element_value)
+            if is_plural:
+                element = in_element.find_elements(by=element_type, value=element_value)
+            else:
+                element = in_element.find_element(by=element_type, value=element_value)
+
+
     except NoSuchElementException:
         print_to_log(f"Element {element_name} does not exist. Current URL: {driver.current_url}.")
         return None
@@ -87,15 +96,24 @@ def find(element_name: str, inside_element: WebElement = None) -> WebElement | N
         return element
 
 
-def btn_click(element_name: str) -> None:
-    """Clicks the indicated element. Receives name of the element from links dictionary.
+def js_click(element_name):
+    element = find(element_name)
+    driver.execute_script("arguments[0].click();", element)
+
+
+def btn_click(element_name: str, in_element=None) -> None:
+    """Clicks the indicated element. Receives name of the element from links dictionary. Has find function inside it.
+    Can receive in_element webelement. If element is tale, will try clicking again in a second once
      Error check provided. Doesn't return anything"""
     try:
-        btn = find(element_name)
+        btn = find(element_name=element_name, in_element=in_element)
         btn.click()
     except ElementClickInterceptedException:
         print_to_log(f"Element {element_name} not clickable. Current URL: {driver.current_url}")
         raise
+    except StaleElementReferenceException:
+        time.sleep(1)
+        btn.click()
     except Exception as err:
         print_to_log(
             f"Error with btn_click func. Element_name {element_name}. Current URL: {driver.current_url}. Error: {err}")
@@ -290,12 +308,14 @@ def receive_params() -> dict:
         if answer == 'y':
             tender_parameters["has_custom_fields"] = True
     else:
+        tender_parameters["is_spot"] = False
         print("So it is a mere E-Tender you seek")
         answer = input("Is it a transportation tender, padawan?\n")
         if answer == 'y':
             print("Transportation it is")
             tender_parameters["is_transportation"] = True
         else:
+            tender_parameters["is_transportation"] = False
             print("A standard E-Tender you shall find\n")
             answer = input("Shall it provide is with a price list, my young one?\n")
             if answer == 'y':
@@ -303,19 +323,26 @@ def receive_params() -> dict:
                 answer = input("And a custom field for an individual like you?\n")
                 if answer == 'y':
                     tender_parameters["has_custom_fields"] = True
+            else:
+                tender_parameters["has_price_list"] = False
         answer = input("Is it a closed one, grasshopper?\n")
         if answer == 'n':
             tender_parameters["is_closed"] = False
+        else:
+            tender_parameters["is_closed"] = True
     answer = input("Almost done. Do you seek a particular ID? if yes, type it in, if not, just type n\n")
     if answer != 'n':
         tender_parameters["tender_id"] = answer
+    else:
+        tender_parameters["tender_id"] = None
     return tender_parameters
 
 
 class Tender:
 
     def __init__(self, is_spot=False, is_closed=True, has_price_list=False, has_custom_fields=False,
-                 has_invitations=False, is_transportation=False, tender_id: str = None, spot_link: str = None):
+                 has_invitations=False, is_transportation=False, tender_id: str = None, spot_link: str = None,
+                 tender_name: str = None, test_env=True):
         """Creates an open E-Tender without Price List and has_invitations as a default"""
         self.is_spot = is_spot
         self.is_closed = is_closed
@@ -325,6 +352,8 @@ class Tender:
         self.is_transportation = is_transportation
         self.tender_id = tender_id
         self.spot_link = spot_link
+        self.tender_name = tender_name
+        # self.test_env = test_env
 
     def add_procurement(self) -> None:
         """
@@ -342,7 +371,10 @@ class Tender:
             self.add_spot_general_info()
         else:
             self.add_etender_general_info()
-        box_type("announce_tender_title_input", "Automation Tender")
+        if self.tender_name == '':
+            box_type("announce_tender_title_input", "Automation Tender")
+        else:
+            box_type("announce_tender_title_input", self.tender_name)
         time.sleep(2)
         box_type("announce_tender_email_input", env_accounts["announcer"]["mail"])
         mce_type("announce_tender_description_input", "test")
@@ -358,16 +390,16 @@ class Tender:
         tender_full_name = find("announce_tender_preview_title").get_attribute('textContent')
         self.tender_id = (re.findall('[S|T]([0-9]+)', tender_full_name))[0]  # Returns tender id as a string
         print_to_log(f"Tender ID: {self.tender_id}")
-        driver.get(env + "tenders.ge/action/send-for-approval/" + self.tender_id)
-        # btn_click("announce_tender_preview_submit_btn")
-        if self.is_spot is False:
+        if self.is_spot:
+            btn_click("announce_tender_spot_preview_submit_btn")
+        else:
+            driver.get(env + "tenders.ge/action/send-for-approval/" + self.tender_id)
             self.approve_tender_admin()
 
     def add_etender_general_info(self) -> None:
         btn_click("announce_etender_btn")
         if self.is_transportation:
-            transportation_btn = find("announce_tender_transportation_yes_btn")
-            driver.execute_script("arguments[0].click();", transportation_btn)
+            js_click("announce_tender_transportation_yes_btn")
             price_list_btn = find(
                 "announce_tender_price_list_btn")  # Somehow clicking transportation radio locks price list
             # button, next line is for that
@@ -439,16 +471,16 @@ class Tender:
         driver.get(env + "tenders.ge/admin/tender-manager/preview/" + self.tender_id)
         btn_click("admin_panel_publish_tender_btn")
 
-    def upload_offer(self):
+    def upload_offer(self, participant):
         """Goes to the offer page and uploads document + offer. Signs into participant acc if needed"""
         if self.is_spot:
             driver.get(self.spot_link)
         else:
             driver.get(env + "tenders.ge")
-            sign_in("participant1")
+            sign_in(participant)
             driver.get(env + "tenders.ge/tenders/proposal/" + self.tender_id)
 
-        self.upload_offer_doc()
+        # self.upload_offer_doc()
         if self.is_transportation:
             self.upload_offer_transportation()
         else:
@@ -539,7 +571,7 @@ class Tender:
     def notifications_answer(self):
         pass
 
-    def declare_result(self, status):
+    def declare_result(self, status=None):
         """
         statuses:
         Current : status-info bg-primary
@@ -552,18 +584,66 @@ class Tender:
         """
         sign_in("announcer")
         driver.get(env + "tenders.ge/tenders/result/" + self.tender_id)
+        print(self.result_get_status())
+        self.result_change_status_to_winner()
+        print(self.result_get_status())
+        self.result_change_status_to_winner()
+        # self.result_change_status_to_awarded()
+        # print(self.result_get_status())
+        # self.result_change_status_to_rejected()
+        print(self.result_get_status())
+
+    def result_get_status(self):
         result_status_div = find("result_status_div")
-        result_status = find("result_status_div_class", result_status_div)
-        status_attribute = result_status.get_attribute('class')
-        print(status_attribute)
+        result_status = find("result_status_div_class", in_element=result_status_div)
+        status_name = result_status.text
+        return status_name
+
+    def result_change_status_to_winner(self):
+        time.sleep(2)
+        btn_click("result_action_btn")
+        print("clicked action button")
+        time.sleep(2)
+        js_click("result_action_win_btn")
+        time.sleep(2)
+        print("clicked win button. Now comes js")
+        js_click("result_action_confirmation_btn")
+
+    def result_return_status_to_evaluation(self):
+        time.sleep(2)
+        btn_click("result_action_btn")
+        print("clicked action button")
+        time.sleep(2)
+        btn_click("test")
+        time.sleep(2)
+        print("clicked win button. Now comes js")
+        js_click("result_action_confirmation_btn")
+
+    def result_change_status_to_awarded(self):
+        btn_click("result_action_btn")
+        btn_click("result_action_award_btn")
+        js_click("result_action_confirmation_btn")
+
+    def result_change_status_to_rejected(self):
+        button_class = find("result_action_btn_frame", is_plural=True)
+        for x in range(len(button_class)):
+            btn_click("result_action_btn", in_element=button_class[x - 1])
+            btn_click("result_action_reject_btn", in_element=button_class[x - 1])
+            button_class = find("result_action_btn_frame", is_plural=True)
+            time.sleep(1)
+        js_click("result_action_confirmation_btn")
+
+    def result_change_status_to_canceled(self):
+        btn_click("result_action_cancellation_btn")
+        js_click("result_action_confirmation_btn")
 
     @staticmethod
     def erase_drafts():
         sign_in("announcer")
         btn_click("dashboard")
-        for _ in range(15):
+        buttons = find("draft_erase_btn", is_plural=True)
+        for x in range(len(buttons)):
             btn_click("draft_erase_btn")
             wait.until(EC.alert_is_present())
             alert = Alert(driver)
             alert.accept()
-
