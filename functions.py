@@ -13,7 +13,6 @@ from selenium.common.exceptions import NoSuchElementException, ElementNotVisible
 import traceback
 import time
 import re
-import pyautogui
 
 driver: WebDriver
 env_accounts: dict
@@ -49,8 +48,7 @@ def init(website: str, test_env=True, count=0) -> WebDriver:
     options.add_argument("--start-maximized")
     options.add_experimental_option("detach", True)  # Keep the browser open until .quit command comes
     driver = webdriver.Chrome(options=options)
-    driver.implicitly_wait(15)
-    driver.minimize_window()
+    driver.implicitly_wait(10)
     action = ActionChains(driver)
     wait = WebDriverWait(driver, 10)
     try:
@@ -96,7 +94,7 @@ def find(element_name: str, is_plural=False, in_element: WebElement = None) -> W
         return element
 
 
-def js_click(element_name):
+def btn_js_click(element_name):
     element = find(element_name)
     driver.execute_script("arguments[0].click();", element)
 
@@ -164,6 +162,7 @@ def box_type(element_name: str, value: str, addition: str = None) -> None:
         raise
 
 
+# TODO: MCE gets stuck from time to time. Needs check
 def mce_type(element_name: str, value: str) -> None:
     """Types the value in the indicated TinyMCE element. Checks if the value in
     the element is right after typing. Error check provided"""
@@ -189,7 +188,7 @@ def mce_type(element_name: str, value: str) -> None:
 
 
 def get_submission_deadline() -> str:
-    """Returns local time (Year, Month, Date, Hour, Minutes, Seconds) as a dictionary"""
+    """Returns present time+5 minutes"""
     now = datetime.now()
     if now.minute > 55:
         now = now.replace(hour=now.hour + 1, minute=5 - (60 - now.minute))
@@ -365,12 +364,79 @@ class Tender:
         has_invitations: True / False
         is_transportation: True / False
         """
+
+        def add_etender_general_info() -> None:
+            btn_click("announce_etender_btn")
+            if self.is_transportation:
+                btn_js_click("announce_tender_transportation_yes_btn")
+                price_list_btn = find(
+                    "announce_tender_price_list_btn")  # Somehow clicking transportation radio locks price list
+                # button, next line is for that
+                driver.execute_script("arguments[0].classList.remove('btn-disabled');", price_list_btn)
+                print_to_log("Created Transportation tender")
+            if self.is_closed:
+                btn_click("announce_tender_closed")
+            if self.has_price_list and self.is_transportation is False:
+                create_price_list_announcer()
+                if self.has_custom_fields is True:
+                    create_custom_fields_announcer()
+            calendar_input("announce_tender_calendar_deadline", get_submission_deadline())
+            calendar_input("announce_tender_calendar_start", datetime.now().strftime("%Y-%m-%d %H:%M"))
+
+        def add_spot_general_info() -> None:
+            btn_click("announce_spot_btn")
+            create_price_list_announcer()
+            if self.has_custom_fields:
+                create_custom_fields_announcer()
+            calendar_input("announce_tender_calendar_deadline", get_submission_deadline())
+
+        def create_price_list_announcer() -> None:
+            """Creates price list in announcer - General info page"""
+            try:
+                btn_click("announce_tender_price_list_btn")
+                myvar = find("announce_tender_price_list_name_input")
+                try:
+                    myvar.send_keys("test")
+                except Exception as err:
+                    print_to_log(f"Error with create_price_list_announcer. Couldn't use send_keys {err}")
+                time.sleep(1)
+                myvar = find("announce_tender_price_list_name_input")
+                btn_click("announce_tender_price_list_name_input")
+                myvar.clear()
+                box_type("announce_tender_price_list_name_input", "test")
+                box_type("announce_tender_price_list_amount", "5.00")
+                select_unit("announce_tender_price_list_unit_list", 1)
+                btn_click("announce_tender_price_list_add_product")
+                btn_click("announce_tender_price_list_close_btn")
+            except Exception as err:
+                print_to_log(f"Error with create_price_list_announcer func. Error: {err}")
+
+        def create_custom_fields_announcer():
+            try:
+                if self.is_spot:
+                    btn_click("announce_tender_custom_fields_btn_spot")
+                else:
+                    btn_click("announce_tender_custom_fields_btn")
+                btn_click("announce_tender_custom_fields_template_btn")
+                btn_click("announce_tender_custom_fields_main_template")
+                btn_click("announce_tender_custom_fields_close_btn")
+            except Exception as err:
+                print_to_log(f"Error with create_custom_fields_announcer func. Error: {err}")
+
+        def invite_companies():
+            participant = env_accounts["participant1"]
+            box_type("announce_tender_invitations_company_input", participant["company_name"])
+            box_type("announce_tender_invitations_mail_input", participant["mail"])
+            if self.is_spot is False:
+                box_type("announce_tender_invitations_id_input", participant["ID"])
+            btn_click("announce_tender_invitations_add_btn")
+
         sign_in("announcer")
         btn_click("announce/register_btn")
         if self.is_spot:
-            self.add_spot_general_info()
+            add_spot_general_info()
         else:
-            self.add_etender_general_info()
+            add_etender_general_info()
         if self.tender_name == '':
             box_type("announce_tender_title_input", "Automation Tender")
         else:
@@ -384,7 +450,7 @@ class Tender:
             btn_click("add_tender_btn_class")
         btn_click("add_tender_btn_class")  # Click next on Documentation page
         if self.has_invitations:
-            self.invite_companies()
+            invite_companies()
         print_to_log("Looking for next button in invitations page")
         btn_click("add_tender_btn_class")
         tender_full_name = find("announce_tender_preview_title").get_attribute('textContent')
@@ -396,75 +462,6 @@ class Tender:
             driver.get(env + "tenders.ge/action/send-for-approval/" + self.tender_id)
             self.approve_tender_admin()
 
-    def add_etender_general_info(self) -> None:
-        btn_click("announce_etender_btn")
-        if self.is_transportation:
-            js_click("announce_tender_transportation_yes_btn")
-            price_list_btn = find(
-                "announce_tender_price_list_btn")  # Somehow clicking transportation radio locks price list
-            # button, next line is for that
-            driver.execute_script("arguments[0].classList.remove('btn-disabled');", price_list_btn)
-            print_to_log("Created Transportation tender")
-        if self.is_closed:
-            btn_click("announce_tender_closed")
-        if self.has_price_list and self.is_transportation is False:
-            self.create_price_list_announcer()
-            if self.has_custom_fields is True:
-                self.create_custom_fields_announcer()
-        calendar_input("announce_tender_calendar_deadline", get_submission_deadline())
-        calendar_input("announce_tender_calendar_start", datetime.now().strftime("%Y-%m-%d %H:%M"))
-
-    def add_spot_general_info(self) -> None:
-        btn_click("announce_spot_btn")
-        self.create_price_list_announcer()
-        if self.has_custom_fields:
-            self.create_custom_fields_announcer()
-        calendar_input("announce_tender_calendar_deadline", get_submission_deadline())
-
-    def create_price_list_announcer(self) -> None:
-        """Creates price list in announcer - General info page"""
-        try:
-            btn_click("announce_tender_price_list_btn")
-            myvar = find("announce_tender_price_list_name_input")
-            try:
-                myvar.send_keys("test")
-            except Exception as err:
-                print_to_log(f"Error with create_price_list_announcer. Couldn't use send_keys {err}")
-            time.sleep(1)
-            myvar = find("announce_tender_price_list_name_input")
-            btn_click("announce_tender_price_list_name_input")
-            myvar.clear()
-            box_type("announce_tender_price_list_name_input", "test")
-            box_type("announce_tender_price_list_amount", "5.00")
-            select_unit("announce_tender_price_list_unit_list", 1)
-            btn_click("announce_tender_price_list_add_product")
-            btn_click("announce_tender_price_list_close_btn")
-        except Exception as err:
-            print_to_log(f"Error with create_price_list_announcer func. Error: {err}")
-
-    def create_custom_fields_announcer(self):
-        try:
-            if self.is_spot:
-                btn_click("announce_tender_custom_fields_btn_spot")
-            else:
-                btn_click("announce_tender_custom_fields_btn")
-            btn_click("announce_tender_custom_fields_template_btn")
-            btn_click("announce_tender_custom_fields_main_template")
-            btn_click("announce_tender_custom_fields_close_btn")
-        except Exception as err:
-            print_to_log(f"Error with create_custom_fields_announcer func. Error: {err}")
-
-    def invite_companies(self):
-        participant = env_accounts["participant1"]
-        box_type("announce_tender_invitations_company_input", participant["company_name"])
-        box_type("announce_tender_invitations_mail_input", participant["mail"])
-        if self.is_spot is False:
-            box_type("announce_tender_invitations_id_input", participant["ID"])
-        btn_click("announce_tender_invitations_add_btn")
-
-    def add_tender_admin(self):
-        pass
-
     def approve_tender_admin(self) -> None:
         sign_in("admin")
         print(self.tender_id)
@@ -473,80 +470,81 @@ class Tender:
 
     def upload_offer(self, participant):
         """Goes to the offer page and uploads document + offer. Signs into participant acc if needed"""
+
+        def upload_offer_doc():
+            try:
+                btn_click("offer_document_upload_btn")
+                file_input = find("offer_document_upload_btn_2")
+                file_path = "C:/Users/user/PycharmProjects/Automatisation-for-Tenders/Logs/logs.txt"
+                file_input.send_keys(file_path)
+                btn_click("offer_document_upload_submit")
+            except Exception as err:
+                print_to_log(f"Error with upload_offer_doc func. Error: {err} ")
+
+        def upload_offer_price_list():
+            """Uploads Price list"""
+            try:
+                btn_click("offer_price_list_btn")
+                box_type("offer_price_list_analog", "test")
+                offer_price_list_price = find("offer_price_list_price")
+                offer_price_list_price.send_keys("5")
+                btn_click("offer_price_list_submit")
+            except Exception as err:
+                print_to_log(f"Error with upload_offer_price_list func. Error: {err}")
+
+        def upload_offer_custom_fields():
+            """Fills custom fields according to main template. Error check provided"""
+            try:
+                btn_click("offer_custom_fields_yes/no")
+                select_unit("offer_custom_fields_multiple_choice", 2)
+                box_type("offer_custom_fields_short_text", "short text")
+                box_type("offer_custom_fields_long_text", "long text")
+                box_type("offer_custom_fields_numbers", "123")
+                box_type("offer_custom_fields_percent", "15")
+                calendar_input("offer_custom_fields_calendar", datetime.now().strftime("%Y-%m-%d %H:%M"))
+            except Exception as err:
+                print_to_log(f"Error with upload_offer_custom_fields func. Error: {err}")
+
+        def upload_offer_standard_price():
+            try:
+                box_type("offer_standard_price", "500")
+                btn_click("offer_standard_price_submit")
+                btn_click("offer_standard_price_submit_accept")
+            except Exception as err:
+                print_to_log(f"Error with upload_offer_standard_price func. Error: {err}")
+
+        def upload_offer_transportation():
+            try:
+                btn_click("offer_transportation_btn")
+                input_price = find("offer_transportation_input_price")
+                input_price.send_keys("30")
+                box_type("offer_transportation_input_transit", '15')
+                select_unit("offer_transportation_select_terms", 1)
+                input_days = find("offer_transportation_input_days")
+                input_days.send_keys("15")
+                btn_click("offer_transportation_submit")
+                btn_click("offer_transport&price_list_accept_submit")
+            except Exception as err:
+                print_to_log(f"Error with upload_offer_transportation func. Error: {err}")
+
         if self.is_spot:
             driver.get(self.spot_link)
         else:
             driver.get(env + "tenders.ge")
             sign_in(participant)
             driver.get(env + "tenders.ge/tenders/proposal/" + self.tender_id)
-
-        # self.upload_offer_doc()
+        if find("offer_document_upload_btn") is not None:
+            upload_offer_doc()
         if self.is_transportation:
-            self.upload_offer_transportation()
+            upload_offer_transportation()
         else:
             if self.has_price_list:
-                self.upload_offer_price_list()
+                upload_offer_price_list()
                 if self.has_custom_fields:
-                    self.upload_offer_custom_fields()
+                    upload_offer_custom_fields()
                 btn_click("offer_transport&price_list_accept_submit")
             else:
-                self.upload_offer_standard_price()
-
-    def upload_offer_doc(self):
-        try:
-            btn_click("offer_document_upload_btn")
-            file_input = find("offer_document_upload_btn_2")
-            file_path = "C:/Users/user/PycharmProjects/Automatisation-for-Tenders/Logs/logs.txt"
-            file_input.send_keys(file_path)
-            btn_click("offer_document_upload_submit")
-        except Exception as err:
-            print_to_log(f"Error with upload_offer_doc func. Error: {err} ")
-
-    def upload_offer_price_list(self):
-        """Uploads Price list"""
-        try:
-            btn_click("offer_price_list_btn")
-            box_type("offer_price_list_analog", "test")
-            offer_price_list_price = find("offer_price_list_price")
-            offer_price_list_price.send_keys("5")
-            btn_click("offer_price_list_submit")
-        except Exception as err:
-            print_to_log(f"Error with upload_offer_price_list func. Error: {err}")
-
-    def upload_offer_custom_fields(self):
-        """Fills custom fields according to main template. Error check provided"""
-        try:
-            btn_click("offer_custom_fields_yes/no")
-            select_unit("offer_custom_fields_multiple_choice", 2)
-            box_type("offer_custom_fields_short_text", "short text")
-            box_type("offer_custom_fields_long_text", "long text")
-            box_type("offer_custom_fields_numbers", "123")
-            box_type("offer_custom_fields_percent", "15")
-            calendar_input("offer_custom_fields_calendar", datetime.now().strftime("%Y-%m-%d %H:%M"))
-        except Exception as err:
-            print_to_log(f"Error with upload_offer_custom_fields func. Error: {err}")
-
-    def upload_offer_standard_price(self):
-        try:
-            box_type("offer_standard_price", "10")
-            btn_click("offer_standard_price_submit")
-            btn_click("offer_standard_price_submit_accept")
-        except Exception as err:
-            print_to_log(f"Error with upload_offer_standard_price func. Error: {err}")
-
-    def upload_offer_transportation(self):
-        try:
-            btn_click("offer_transportation_btn")
-            input_price = find("offer_transportation_input_price")
-            input_price.send_keys("30")
-            box_type("offer_transportation_input_transit", '15')
-            select_unit("offer_transportation_select_terms", 1)
-            input_days = find("offer_transportation_input_days")
-            input_days.send_keys("15")
-            btn_click("offer_transportation_submit")
-            btn_click("offer_transport&price_list_accept_submit")
-        except Exception as err:
-            print_to_log(f"Error with upload_offer_transportation func. Error: {err}")
+                upload_offer_standard_price()
 
     def clarifications_question(self):
         """
@@ -582,60 +580,57 @@ class Tender:
         Rejected : status-info bg-danger
         Canceled : status-info bg-danger
         """
+
+        def result_change_status_to_winner():
+            btn_click("result_action_btn")
+            btn_js_click("result_action_win_btn")
+            btn_js_click("result_action_confirmation_btn")
+
+        def result_return_status_to_evaluation():
+            btn_click("result_action_btn")
+            btn_js_click("result_action_win_btn")
+            btn_js_click("result_action_confirmation_btn")
+
+        def result_change_status_to_awarded():
+            btn_click("result_action_btn")
+            btn_js_click("result_action_award_btn")
+            btn_js_click("result_action_confirmation_btn")
+
+        def result_change_status_to_rejected():
+            button_class = find("result_action_btn_frame", is_plural=True)
+            for x in range(len(button_class)):
+                btn_click("result_action_btn", in_element=button_class[x - 1])
+                btn_click("result_action_reject_btn", in_element=button_class[x - 1])
+                button_class = find("result_action_btn_frame", is_plural=True)
+                time.sleep(1)
+            btn_js_click("result_action_confirmation_btn")
+
+        def result_change_status_to_canceled():
+            btn_click("result_action_cancellation_btn")
+            btn_js_click("result_action_confirmation_btn")
+
         sign_in("announcer")
         driver.get(env + "tenders.ge/tenders/result/" + self.tender_id)
-        print(self.result_get_status())
-        self.result_change_status_to_winner()
-        print(self.result_get_status())
-        self.result_change_status_to_winner()
-        # self.result_change_status_to_awarded()
-        # print(self.result_get_status())
-        # self.result_change_status_to_rejected()
-        print(self.result_get_status())
+
+        if status == "Winner":
+            result_change_status_to_winner()
+        elif status == "Awarded":
+            result_change_status_to_awarded()
+        elif status == "Rejected":
+            result_change_status_to_rejected()
+        elif status == "Canceled":
+            result_change_status_to_canceled()
+        elif status == "Cancel Award":
+            result_change_status_to_awarded()
+
+        # Check if the status was changed right. Try again if not
+        if self.result_get_status() != status:
+            print_to_log(f"Error with declare_result func. Couldn't change status to {status}, trying again")
 
     def result_get_status(self):
-        result_status_div = find("result_status_div")
-        result_status = find("result_status_div_class", in_element=result_status_div)
+        result_status = find("result_status_div_class")
         status_name = result_status.text
         return status_name
-
-    def result_change_status_to_winner(self):
-        time.sleep(2)
-        btn_click("result_action_btn")
-        print("clicked action button")
-        time.sleep(2)
-        js_click("result_action_win_btn")
-        time.sleep(2)
-        print("clicked win button. Now comes js")
-        js_click("result_action_confirmation_btn")
-
-    def result_return_status_to_evaluation(self):
-        time.sleep(2)
-        btn_click("result_action_btn")
-        print("clicked action button")
-        time.sleep(2)
-        btn_click("test")
-        time.sleep(2)
-        print("clicked win button. Now comes js")
-        js_click("result_action_confirmation_btn")
-
-    def result_change_status_to_awarded(self):
-        btn_click("result_action_btn")
-        btn_click("result_action_award_btn")
-        js_click("result_action_confirmation_btn")
-
-    def result_change_status_to_rejected(self):
-        button_class = find("result_action_btn_frame", is_plural=True)
-        for x in range(len(button_class)):
-            btn_click("result_action_btn", in_element=button_class[x - 1])
-            btn_click("result_action_reject_btn", in_element=button_class[x - 1])
-            button_class = find("result_action_btn_frame", is_plural=True)
-            time.sleep(1)
-        js_click("result_action_confirmation_btn")
-
-    def result_change_status_to_canceled(self):
-        btn_click("result_action_cancellation_btn")
-        js_click("result_action_confirmation_btn")
 
     @staticmethod
     def erase_drafts():
