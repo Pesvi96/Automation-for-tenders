@@ -28,7 +28,9 @@ default_parameters = {
     'has_custom_fields': False,
     'has_invitations': False,
     'is_transportation': False,
-    'tender_id': None
+    'tender_id': str,
+    'spot_link': str,
+    'tender_name': str,
 }
 
 
@@ -189,12 +191,12 @@ def mce_type(element_name: str, value: str) -> None:
 
 def get_submission_deadline() -> str:
     """Returns present time+5 minutes"""
-    now = datetime.now()
-    if now.minute > 55:
-        now = now.replace(hour=now.hour + 1, minute=5 - (60 - now.minute))
+    now_plus_5_minutes = datetime.now()
+    if now_plus_5_minutes.minute > 55:
+        now_plus_5_minutes = now_plus_5_minutes.replace(hour=now_plus_5_minutes.hour + 1, minute=5 - (60 - now_plus_5_minutes.minute))
     else:
-        now = now.replace(minute=now.minute + 5)
-    return now.strftime("%Y-%m-%d %H:%M")
+        now_plus_5_minutes = now_plus_5_minutes.replace(minute=now_plus_5_minutes.minute + 5)
+    return now_plus_5_minutes.strftime("%Y-%m-%d %H:%M")
 
 
 def check_url(actual) -> bool:
@@ -268,6 +270,7 @@ def sign_in(user: str) -> bool:
             sign_out()
         btn_click("sign_in_btn")
         box_type("sign_in_mail", env_accounts[user]["mail"])
+        print(f"\n\n\t\t{env_accounts[user]["pass"]}\n\n\n{env_accounts[user]["mail"]}")
         box_type("sign_in_pass", env_accounts[user]["pass"])
         btn_click("sign_in_submit_btn")
         if user != "admin":
@@ -295,46 +298,46 @@ def sign_out() -> None:
         print_to_log("Signed out successfully")
 
 
-def receive_params() -> dict:
-    tender_parameters = default_parameters
-    answer = input("Okay now let's figure out the parameters. Let's go one by one. Is it SPOT? type y/n\n")
-    if answer == "y":
-        print("So it is SPOT you seek")
-        tender_parameters["is_spot"] = True
-        tender_parameters["has_price_list"] = True
-        tender_parameters["has_invitations"] = True
-        answer = input("Would this SPOT one have custom fields?")
-        if answer == 'y':
-            tender_parameters["has_custom_fields"] = True
-    else:
-        tender_parameters["is_spot"] = False
-        print("So it is a mere E-Tender you seek")
-        answer = input("Is it a transportation tender, padawan?\n")
-        if answer == 'y':
-            print("Transportation it is")
-            tender_parameters["is_transportation"] = True
-        else:
-            tender_parameters["is_transportation"] = False
-            print("A standard E-Tender you shall find\n")
-            answer = input("Shall it provide is with a price list, my young one?\n")
-            if answer == 'y':
-                tender_parameters["has_price_list"] = True
-                answer = input("And a custom field for an individual like you?\n")
-                if answer == 'y':
-                    tender_parameters["has_custom_fields"] = True
-            else:
-                tender_parameters["has_price_list"] = False
-        answer = input("Is it a closed one, grasshopper?\n")
-        if answer == 'n':
-            tender_parameters["is_closed"] = False
-        else:
-            tender_parameters["is_closed"] = True
-    answer = input("Almost done. Do you seek a particular ID? if yes, type it in, if not, just type n\n")
-    if answer != 'n':
-        tender_parameters["tender_id"] = answer
-    else:
-        tender_parameters["tender_id"] = None
-    return tender_parameters
+# def receive_params() -> dict:
+#     tender_parameters = default_parameters
+#     answer = input("Okay now let's figure out the parameters. Let's go one by one. Is it SPOT? type y/n\n")
+#     if answer == "y":
+#         print("So it is SPOT you seek")
+#         tender_parameters["is_spot"] = True
+#         tender_parameters["has_price_list"] = True
+#         tender_parameters["has_invitations"] = True
+#         answer = input("Would this SPOT one have custom fields?")
+#         if answer == 'y':
+#             tender_parameters["has_custom_fields"] = True
+#     else:
+#         tender_parameters["is_spot"] = False
+#         print("So it is a mere E-Tender you seek")
+#         answer = input("Is it a transportation tender, padawan?\n")
+#         if answer == 'y':
+#             print("Transportation it is")
+#             tender_parameters["is_transportation"] = True
+#         else:
+#             tender_parameters["is_transportation"] = False
+#             print("A standard E-Tender you shall find\n")
+#             answer = input("Shall it provide is with a price list, my young one?\n")
+#             if answer == 'y':
+#                 tender_parameters["has_price_list"] = True
+#                 answer = input("And a custom field for an individual like you?\n")
+#                 if answer == 'y':
+#                     tender_parameters["has_custom_fields"] = True
+#             else:
+#                 tender_parameters["has_price_list"] = False
+#         answer = input("Is it a closed one, grasshopper?\n")
+#         if answer == 'n':
+#             tender_parameters["is_closed"] = False
+#         else:
+#             tender_parameters["is_closed"] = True
+#     answer = input("Almost done. Do you seek a particular ID? if yes, type it in, if not, just type n\n")
+#     if answer != 'n':
+#         tender_parameters["tender_id"] = answer
+#     else:
+#         tender_parameters["tender_id"] = None
+#     return tender_parameters
 
 
 class Tender:
@@ -352,6 +355,7 @@ class Tender:
         self.tender_id = tender_id
         self.spot_link = spot_link
         self.tender_name = tender_name
+        # TODO: Add database to tender_parameters_dev2.json
         # self.test_env = test_env
 
     def add_procurement(self) -> None:
@@ -430,6 +434,12 @@ class Tender:
             if self.is_spot is False:
                 box_type("announce_tender_invitations_id_input", participant["ID"])
             btn_click("announce_tender_invitations_add_btn")
+            participant = env_accounts["participant2"]
+            box_type("announce_tender_invitations_company_input", participant["company_name"])
+            box_type("announce_tender_invitations_mail_input", participant["mail"])
+            if self.is_spot is False:
+                box_type("announce_tender_invitations_id_input", participant["ID"])
+            btn_click("announce_tender_invitations_add_btn")
 
         sign_in("announcer")
         btn_click("announce/register_btn")
@@ -500,7 +510,8 @@ class Tender:
                 box_type("offer_custom_fields_short_text", "short text")
                 box_type("offer_custom_fields_long_text", "long text")
                 box_type("offer_custom_fields_numbers", "123")
-                box_type("offer_custom_fields_percent", "15")
+                percent = find("offer_custom_fields_percent")
+                percent.send_keys("15")
                 calendar_input("offer_custom_fields_calendar", datetime.now().strftime("%Y-%m-%d %H:%M"))
             except Exception as err:
                 print_to_log(f"Error with upload_offer_custom_fields func. Error: {err}")

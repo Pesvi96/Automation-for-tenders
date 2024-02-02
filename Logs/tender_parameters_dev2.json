@@ -1,0 +1,48 @@
+{
+  "111": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": true,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "asd",
+    "tender_id": "",
+    "tender_name": "asd"
+  }
+}{
+  "": {
+    "has_custom_fields": true,
+    "has_invitations": false,
+    "has_price_list": true,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "",
+    "tender_name": "Price List test"
+  },
+  "111": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": true,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "asd",
+    "tender_id": "",
+    "tender_name": "asd"
+  }
+}{
+  "": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "",
+    "tender_name": "standard tender"
+  }
+}
