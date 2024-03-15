@@ -9,40 +9,16 @@
     "spot_link": "",
     "tender_id": "20642",
     "tender_name": ""
-  }
-}{
-  "": {
-    "has_custom_fields": false,
-    "has_invitations": true,
-    "has_price_list": true,
-    "is_closed": true,
-    "is_spot": false,
-    "is_transportation": false,
-    "spot_link": "",
-    "tender_id": "",
-    "tender_name": "Release test 3"
   },
-  "20642": {
-    "has_custom_fields": true,
-    "has_invitations": false,
-    "has_price_list": true,
-    "is_closed": true,
-    "is_spot": false,
-    "is_transportation": false,
-    "spot_link": "",
-    "tender_id": "20642",
-    "tender_name": ""
-  }
-}{
-  "20643": {
+  "21171": {
     "has_custom_fields": false,
     "has_invitations": true,
     "has_price_list": true,
     "is_closed": true,
-    "is_spot": false,
+    "is_spot": true,
     "is_transportation": false,
     "spot_link": "",
-    "tender_id": "20643",
-    "tender_name": "Release test 3"
+    "tender_id": "21171",
+    "tender_name": "SPOT test"
   }
 }

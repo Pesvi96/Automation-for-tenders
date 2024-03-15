@@ -1,48 +1,277 @@
 {
   "111": {
+    "has_custom_fields": true,
+    "has_invitations": true,
+    "has_price_list": true,
+    "is_closed": true,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "111",
+    "tender_name": "changed json"
+  },
+  "1260": {
+    "has_custom_fields": true,
+    "has_invitations": true,
+    "has_price_list": true,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1260",
+    "tender_name": "add to JSON test"
+  },
+  "1262": {
+    "has_custom_fields": true,
+    "has_invitations": true,
+    "has_price_list": true,
+    "is_closed": true,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1262",
+    "tender_name": "changed json"
+  },
+  "1265": {
     "has_custom_fields": false,
-    "has_invitations": false,
+    "has_invitations": true,
+    "has_price_list": true,
+    "is_closed": true,
+    "is_spot": true,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1265",
+    "tender_name": "Amendment test - SPOT"
+  },
+  "1266": {
+    "has_custom_fields": false,
+    "has_invitations": true,
     "has_price_list": false,
     "is_closed": true,
     "is_spot": false,
     "is_transportation": false,
-    "spot_link": "asd",
-    "tender_id": "",
-    "tender_name": "asd"
-  }
-}{
-  "": {
-    "has_custom_fields": true,
+    "spot_link": "",
+    "tender_id": "1266",
+    "tender_name": "Amendment test - Closed Tender"
+  },
+  "1267": {
+    "has_custom_fields": false,
+    "has_invitations": true,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1267",
+    "tender_name": "Amendment test - Open Tender"
+  },
+  "1268": {
+    "has_custom_fields": false,
+    "has_invitations": true,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": true,
+    "spot_link": "",
+    "tender_id": "1268",
+    "tender_name": "Amendment test - Transportation"
+  },
+  "1269": {
+    "has_custom_fields": false,
+    "has_invitations": true,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1269",
+    "tender_name": "Alert Type 1 - test 1"
+  },
+  "1270": {
+    "has_custom_fields": false,
+    "has_invitations": true,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1270",
+    "tender_name": "Alert Type 1 - test 1"
+  },
+  "1271": {
+    "has_custom_fields": false,
+    "has_invitations": true,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1271",
+    "tender_name": "Alert Type 1 - Removed"
+  },
+  "1272": {
+    "has_custom_fields": false,
+    "has_invitations": true,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1272",
+    "tender_name": "Alert Type 1 - Test 2"
+  },
+  "1273": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1273",
+    "tender_name": "Alert test 1"
+  },
+  "1274": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1274",
+    "tender_name": "Alert test 2"
+  },
+  "1275": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1275",
+    "tender_name": "test"
+  },
+  "1276": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1276",
+    "tender_name": "Alert mail test"
+  },
+  "1278": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1278",
+    "tender_name": "06 Alert test 1"
+  },
+  "1279": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1279",
+    "tender_name": "06 Alert test 2"
+  },
+  "1280": {
+    "has_custom_fields": false,
+    "has_invitations": true,
+    "has_price_list": true,
+    "is_closed": true,
+    "is_spot": true,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1280",
+    "tender_name": "SPOT test"
+  },
+  "1281": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1281",
+    "tender_name": "Type 3 test 1"
+  },
+  "1282": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1282",
+    "tender_name": "Type 3 test 2"
+  },
+  "1283": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1283",
+    "tender_name": "Type 3 test 3"
+  },
+  "1284": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1284",
+    "tender_name": "Type 3 test 4"
+  },
+  "1285": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1285",
+    "tender_name": "Type 3 test 5"
+  },
+  "1286": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": true,
+    "is_closed": true,
+    "is_spot": true,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1286",
+    "tender_name": "test"
+  },
+  "1287": {
+    "has_custom_fields": false,
     "has_invitations": false,
     "has_price_list": true,
     "is_closed": false,
     "is_spot": false,
     "is_transportation": false,
     "spot_link": "",
-    "tender_id": "",
-    "tender_name": "Price List test"
-  },
-  "111": {
-    "has_custom_fields": false,
-    "has_invitations": false,
-    "has_price_list": false,
-    "is_closed": true,
-    "is_spot": false,
-    "is_transportation": false,
-    "spot_link": "asd",
-    "tender_id": "",
-    "tender_name": "asd"
-  }
-}{
-  "": {
-    "has_custom_fields": false,
-    "has_invitations": false,
-    "has_price_list": false,
-    "is_closed": false,
-    "is_spot": false,
-    "is_transportation": false,
-    "spot_link": "",
-    "tender_id": "",
-    "tender_name": "standard tender"
+    "tender_id": "1287",
+    "tender_name": "Price List"
   }
 }

@@ -355,8 +355,11 @@ class Tender:
         self.tender_id = tender_id
         self.spot_link = spot_link
         self.tender_name = tender_name
-        # TODO: Add database to tender_parameters_dev2.json
         # self.test_env = test_env
+        print(f"Tender class init method parameters: spot: {self.is_spot}, closed: {self.is_closed}, "
+              f"price: {self.has_price_list}, custom: {self.has_custom_fields}, invites: {self.has_invitations}"
+              f"transport: {self.is_transportation}, tenderid {self.tender_id}, spotlink {self.spot_link}"
+              f"name: {self.tender_name}")
 
     def add_procurement(self) -> None:
         """
@@ -431,13 +434,13 @@ class Tender:
             participant = env_accounts["participant1"]
             box_type("announce_tender_invitations_company_input", participant["company_name"])
             box_type("announce_tender_invitations_mail_input", participant["mail"])
-            if self.is_spot is False:
+            if self.is_closed and not self.is_spot:
                 box_type("announce_tender_invitations_id_input", participant["ID"])
             btn_click("announce_tender_invitations_add_btn")
             participant = env_accounts["participant2"]
             box_type("announce_tender_invitations_company_input", participant["company_name"])
             box_type("announce_tender_invitations_mail_input", participant["mail"])
-            if self.is_spot is False:
+            if self.is_closed and not self.is_spot:
                 box_type("announce_tender_invitations_id_input", participant["ID"])
             btn_click("announce_tender_invitations_add_btn")
 
@@ -471,6 +474,7 @@ class Tender:
         else:
             driver.get(env + "tenders.ge/action/send-for-approval/" + self.tender_id)
             self.approve_tender_admin()
+        return self.tender_id
 
     def approve_tender_admin(self) -> None:
         sign_in("admin")
@@ -546,6 +550,7 @@ class Tender:
             driver.get(env + "tenders.ge/tenders/proposal/" + self.tender_id)
         if find("offer_document_upload_btn") is not None:
             upload_offer_doc()
+            # TODO: It can't see the doc upload button in SPOT proposal page
         if self.is_transportation:
             upload_offer_transportation()
         else:
