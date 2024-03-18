@@ -1,0 +1,24 @@
+{
+  "1299": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1299",
+    "tender_name": "test"
+  },
+  "1300": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1300",
+    "tender_name": "test"
+  }
+}

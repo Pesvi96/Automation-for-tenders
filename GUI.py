@@ -1,9 +1,7 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox
 from functions import *
 import json
-
-# To work on main, indicate test_env = False and sent to init func
 
 default_parameters = {
     'is_spot': False,
@@ -118,20 +116,23 @@ class TenderGUI:
         ttk.Button(self.window, text="Find", command=self.set_gui_from_data).grid(row=4, column=2, pady=10)
         ttk.Button(self.window, text="Add to JSON", command=self.save_parameters_to_json).grid(row=4, column=3,
                                                                                                pady=10)
-        ttk.Button(self.window, text="Add").grid(row=6, column=2, padx=(20, 0))
-        ttk.Button(self.window, text="Delete").grid(row=7, column=2, padx=(20, 0))
-        ttk.Button(self.window, text="Run Test Suite", command=self.run_test_suite).grid(row=8, column=2, padx=(20, 0))
-        ttk.Button(self.window, text="Dialog", command=self.dialog_test).grid(row=8, column=3)
+
+        # --------------------Designed for later purposes (test suites) ----------------
+        # ttk.Button(self.window, text="Add").grid(row=6, column=2, padx=(20, 0))
+        # ttk.Button(self.window, text="Delete").grid(row=7, column=2, padx=(20, 0))
+        # ttk.Button(self.window, text="Run Test Suite", command=self.run_test_suite).grid
+        # (row=8, column=2, padx=(20, 0))
 
         # Listbox
-        self.yScroll = tk.Scrollbar(self.window, orient=tk.VERTICAL, relief='groove')
-
-        self.test_suites_list = tk.StringVar()
-        self.test_suites_box = tk.Listbox(self.window, bd=3, listvariable=self.test_suites_list, width=50,
-                                          relief="groove", yscrollcommand=self.yScroll.set)
-        self.test_suites_box.grid(row=6, column=0, columnspan=2, rowspan=4, padx=(10, 0), sticky=tk.N + tk.S + tk.W)
-        self.yScroll.grid(row=6, column=2, sticky=tk.N + tk.S + tk.W)
-        self.yScroll.config(command=self.test_suites_box.yview)
+        # self.yScroll = tk.Scrollbar(self.window, orient=tk.VERTICAL, relief='groove')
+        #
+        # self.test_suites_list = tk.StringVar()
+        # self.test_suites_box = tk.Listbox(self.window, bd=3, listvariable=self.test_suites_list, width=50,
+        #                                   relief="groove", yscrollcommand=self.yScroll.set)
+        # self.test_suites_box.grid(row=6, column=0, columnspan=2, rowspan=4, padx=(10, 0), sticky=tk.N + tk.S + tk.W)
+        # self.yScroll.grid(row=6, column=2, sticky=tk.N + tk.S + tk.W)
+        # self.yScroll.config(command=self.test_suites_box.yview)
+        # ----------------------------------------------------------------
 
         # Initialize UI based on default values
         self.update_ui()
@@ -139,8 +140,8 @@ class TenderGUI:
     def update_ui(self):
         """Disable/Enable objects according to indicated attributes"""
 
-        def change_all_widgets(state):
-            """Enables all widgets in the UI"""
+        def change_all_widgets(state: str):
+            """Switches state of all widgets in the UI. Receives strings "disabled" or "enabled" """
             widgets = [
                 self.spot_radio, self.tender_radio, self.transport_radio,
                 self.price_list_checkbox, self.custom_fields_checkbox,
@@ -202,20 +203,18 @@ class TenderGUI:
         # Disable/Enable Price List and Custom Fields based on Transport
 
     def driver_init(self):
+        """Opens up Chrome. Goes to production or testing environment, as indicated in 'production' checkbox"""
         global json_filepath
         if self.is_production.get():
-            test_env = False
+            is_test_env = False
             json_filepath = "Logs/tender_parameters_main.json"
         else:
-            json_filepath = "Logs/tender_parameters_dev2.json"
-            test_env = True
-        init("tenders.ge", test_env)
-
-    def dialog_test(self):
-        spotlink = tk.simpledialog.askstring(title="title", prompt='\n\t\t\tdialog\t\t\t\t\n\n')
-        print(spotlink)
+            json_filepath = "Logs/tender_parameters_test.json"
+            is_test_env = True
+        init("tenders.ge", is_test_env)
 
     def perform_action(self):
+        """Starts whatever action indicated after GO button is pressed"""
         action = self.action_var.get()
         if action == "Create":
             self.create_tender()
@@ -223,7 +222,7 @@ class TenderGUI:
             self.participate_tender()
         elif action == "Manage":
             self.manage_tender()
-        elif action == "Clarifications - Question":
+        elif action == "Clarifications - Question":  # TODO: write this part
             pass
         elif action == "Clarifications - Answer":
             pass
@@ -235,7 +234,7 @@ class TenderGUI:
             self.erase_drafts()
 
     def clear_fields(self):
-        # Clear all input fields and checkboxes
+        """ Clear all input fields and checkboxes """
         print("Clearing fields")
         self.tender_type_var.set("")
         self.price_list_var.set(False)
@@ -246,8 +245,6 @@ class TenderGUI:
         self.spot_link_var.set("")
         self.tender_name_var.set("")
 
-    # -------------------------- Part for getting/saving data --------------------------
-
     def save_parameters_to_json(self):
         """Saves tender parameters dictionary to designated json"""
         tender_parameters = self.get_params_from_gui()
@@ -256,6 +253,10 @@ class TenderGUI:
             with open(json_filepath, mode='r') as f:
                 tenders_data = json.load(f)
         except FileNotFoundError as err:
+            print(err)
+            tenders_data = {}
+        except ValueError as err:
+            print("JSON is empty")
             print(err)
             tenders_data = {}
 
@@ -335,7 +336,7 @@ class TenderGUI:
     def get_params_from_gui(self) -> dict:
         """Gets all parameters from GUI, returns it as a dictionary"""
         tender_parameters = default_parameters
-        print("\n\t\t--------get_params_from_gui func ------")
+
         # Retrieve values from the GUI instance
         tender_type = self.tender_type_var.get()
         price_list = self.price_list_var.get()
@@ -369,41 +370,43 @@ class TenderGUI:
         tender_parameters["tender_name"] = tender_name
         # tender_parameters["test_env"] = test_env
 
-        print(f"Result parameters:\n------\n{tender_parameters}\n------")
         return tender_parameters
 
-    # ----------------------------Test Suit part --------------------------------------
+    # ----------------------------Test Suite part --------------------------------------
 
-    def run_test_suite(self):
-        def perform_test_suite_action(action: str):
-            if action == 'Create':
-                self.set_gui_from_data(actions_dictionary[action])
-                self.create_tender()
-            elif action == "Participate":
-                pass
-            elif action == "Manage":
-                pass
-
-        test_suite = "first_suite"  # Here must be Listbox variable
-
-        with open("./Logs/test_suites.json", mode='r+') as f:
-            try:
-                test_suites_list = json.load(f)
-            except json.decoder.JSONDecodeError as err:
-                print(err)
-                test_suites_list = {}
-            print(test_suites_list)
-
-        if test_suite in test_suites_list:
-            actions_dictionary = test_suites_list[test_suite]  # Receives test suite dictionary
-
-        for suite_action in actions_dictionary:
-            perform_test_suite_action(suite_action)
+    # TODO: Need to add test suites part
+    # def run_test_suite(self):
+    #     def perform_test_suite_action(action: str):
+    #         if action == 'Create':
+    #             self.set_gui_from_data(actions_dictionary[action])
+    #             self.create_tender()
+    #         elif action == "Participate":
+    #             pass
+    #         elif action == "Manage":
+    #             pass
+    #
+    #     test_suite = "first_suite"  # Here must be Listbox variable
+    #
+    #     with open("./Logs/test_suites.json", mode='r+') as f:
+    #         try:
+    #             test_suites_list = json.load(f)
+    #         except json.decoder.JSONDecodeError as err:
+    #             print(err)
+    #             test_suites_list = {}
+    #         print(test_suites_list)
+    #
+    #     if test_suite in test_suites_list:
+    #         actions_dictionary = test_suites_list[test_suite]  # Receives test suite dictionary
+    #
+    #     for suite_action in actions_dictionary:
+    #         perform_test_suite_action(suite_action)
 
     # ---------------------------------------------------------------------------------
 
     def create_tender(self):
-        """Create procurement action. Activates add_procurement func in functions.py"""
+        """Create procurement - action. Creates Tender class object according to parameters indicate in GUI.
+        Activates add_procurement func in functions.py on created Tender object.
+        Saves created tender parameters into tender_parameters_test (or main).json"""
         print("Create Tender")
         tender_parameters = self.get_params_from_gui()
         tender = Tender(**tender_parameters)
@@ -412,6 +415,8 @@ class TenderGUI:
         self.save_parameters_to_json()
 
     def participate_tender(self):
+        """Participate - action. Creates Tender class object according to parameters indicated in GUI.
+        Chooses participant (1 or 2) and activates upload_offer func in functions.py on created Tender object"""
         # Implement your participate tender logic here
         print("Participate Tender")
         tender = Tender(**self.get_params_from_gui())
@@ -420,6 +425,9 @@ class TenderGUI:
         tender.upload_offer(participant_choice)
 
     def manage_tender(self):
+        """Manage tender - action. Create Tender class object according to parameters indicated in GUI.
+        Changes tender status to the status indicated in GUI. Calls declare_result function
+        on Tender object in functions.py"""
         # Implement your manage tender logic here
         print("Manage Tender")
         status = self.result_status_var.get()
@@ -428,6 +436,7 @@ class TenderGUI:
 
     @staticmethod
     def erase_drafts():
+        """Calls erase_drafts function, which erases all created draft tenders one by one."""
         print("Erase Drafts")
         Tender.erase_drafts()
 
