@@ -1,0 +1,21 @@
+{
+  "first_suite": {
+    "Create": {
+      "has_custom_fields": true,
+      "has_invitations": true,
+      "has_price_list": true,
+      "is_closed": true,
+      "is_spot": false,
+      "is_transportation": false,
+      "spot_link": "",
+      "tender_name": "changed json"
+    },
+    "Participate": {
+      "participant_choice": "participant1"
+    },
+    "Manage": {
+      "status": "Winner"
+    }
+  },
+  "second_suite": {}
+}
