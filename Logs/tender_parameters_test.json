@@ -20,5 +20,49 @@
     "spot_link": "",
     "tender_id": "1300",
     "tender_name": "test"
+  },
+  "1301": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1301",
+    "tender_name": "Alert test 1"
+  },
+  "1302": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1302",
+    "tender_name": "Alert test 2"
+  },
+  "1304": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1304",
+    "tender_name": "Alert test 2"
+  },
+  "1305": {
+    "has_custom_fields": false,
+    "has_invitations": false,
+    "has_price_list": false,
+    "is_closed": false,
+    "is_spot": false,
+    "is_transportation": false,
+    "spot_link": "",
+    "tender_id": "1305",
+    "tender_name": "Alert test 3"
   }
 }

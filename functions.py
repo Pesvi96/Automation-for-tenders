@@ -442,7 +442,7 @@ class Tender:
             try:
                 btn_click("offer_document_upload_btn")
                 file_input = find("offer_document_upload_btn_2")
-                file_path = "C:/Users/user/PycharmProjects/Automatisation-for-Tenders/Logs/logs.txt"
+                file_path = "C:/Users/user/PycharmProjects/Automation-for-Tenders/Logs/logs.txt"
                 file_input.send_keys(file_path)
                 btn_click("offer_document_upload_submit")
             except Exception as err:
