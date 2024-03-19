@@ -5,7 +5,8 @@ For review purposes only. Script cannot be executed, as the database for all the
 
 Tender types explanation
 ---------------------------
-Can be either E-Tender, Transportation tender or SPOT Tender
+Can be either E-Tender, Transportation tender or SPOT Tender.
+
 attributes:
 - Can be open or closed (is_closed)
 - Can have a price list (has_price_list)
@@ -29,14 +30,6 @@ For every action Tender class object is created with all the descriptors. The da
 ### ROADMAP
 
 - Develop Selenium web test automation
-  - Sign in
-  - Sign out
-  - Add Tender func (Closed/Open, Standard/Price List+Custom Fields/Transportation)
-  - Publish Tender (with received variable name)
-  - Add SPOT
-  - Participate in Procurement (with received variable name and options - if transportation, elif price list+custom fields + standard procedures)
-  - Participate in SPOT
-  - Announcer actions (with received variable name)
-  - Database
-  - Test Suites
+  - Add Clarifications / Notifications check
+  - Create Test Suites addition and execution functionality
 - Integrate the developed script into PyTest
