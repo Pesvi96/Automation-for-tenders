@@ -417,7 +417,6 @@ class TenderGUI:
     def participate_tender(self):
         """Participate - action. Creates Tender class object according to parameters indicated in GUI.
         Chooses participant (1 or 2) and activates upload_offer func in functions.py on created Tender object"""
-        # Implement your participate tender logic here
         print("Participate Tender")
         tender = Tender(**self.get_params_from_gui())
         participant_choice = self.participant_var.get()
@@ -428,7 +427,6 @@ class TenderGUI:
         """Manage tender - action. Create Tender class object according to parameters indicated in GUI.
         Changes tender status to the status indicated in GUI. Calls declare_result function
         on Tender object in functions.py"""
-        # Implement your manage tender logic here
         print("Manage Tender")
         status = self.result_status_var.get()
         tender = Tender(**self.get_params_from_gui())
